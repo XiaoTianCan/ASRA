@@ -49,10 +49,6 @@ informative:
     date: 2016-08
     target: https://dl.acm.org/doi/pdf/10.1145/2934872.2934883
 
-# Yuchen Jin,Colin Scott,Amogh Dhamdhere,Vasileios Giotsas,Arvind Krishnamurthy,Scott Shenker
-# Vasileios Giotsas, Shi Zhou
-# Avichai Cohen, Yossi Gilad, Amir Herzberg, Michael Schapira
-
 ...
 
 --- abstract
