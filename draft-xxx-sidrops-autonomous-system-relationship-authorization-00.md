@@ -86,6 +86,8 @@ An AS can unilaterally authorize a set of its provider ASes. Under the one-direc
 
 - ASy is ASx's customer/peer (or other non-provider roles) instead of ASx's provider, but ASx puts ASy into its provider-set in the ASPA record. The bogus records may be leveraged by attackers to launch route hijack attacks. 
 
+- ASy is ASx's provider. ASx puts ASy into its provider-set in the ASPA record, but ASy intentionally or unintentionally puts ASx into its provider-set. According to the records of the two ASes, the relationship between them is mutual transit. The bogus records may be leveraged by attackers to launch route hijack attacks. 
+
 - ASx and ASy are not adjacent, but ASx puts ASy into its provider-set in the ASPA record. The bogus records may be leveraged by attackers to launch route hijack attacks. 
 
 Bogus records bring two risks:
