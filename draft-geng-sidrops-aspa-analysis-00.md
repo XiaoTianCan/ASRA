@@ -1,11 +1,11 @@
 ---
 title: An Analysis of ASPA-based AS_PATH Verification
 abbrev: ASPA analysis
-docname: draft-xxx-sidrops-aspa-analysis-00
+docname: draft-geng-sidrops-aspa-analysis-00
 obsoletes:
 updates:
 date:
-category: informational
+category: info
 submissionType: IETF
 
 ipr: trust200902
@@ -15,12 +15,26 @@ keyword: Internet-Draft
 
 author:
  -
-  ins: X. XX
-  name: X XX
-  organization: XXX
-  email: xxx@xxx.com
-  city: XX
-  country: XX
+  ins: N. Geng
+  name: Nan Geng
+  organization: Huawei
+  email: gengnan@huawei.com
+  city: Beijing
+  country: China
+ -
+  ins: K. Sriram
+  name: Kotikalapudi Sriram
+  organization: USA NIST
+  email: ksriram@nist.gov
+  city: Gaithersburg, MD
+  country: USA
+ -
+  ins: M. Huang
+  name: Mingqing Huang
+  organization: 
+  email: huangmq@vip.sina.com
+  city: Beijing
+  country: China
 
 normative:
   I-D.ietf-sidrops-aspa-verification:
@@ -59,10 +73,11 @@ Autonomous System Provider Authorization (ASPA) is very helpful in detecting and
 --- middle
 
 # Introduction
-Autonomous System Provider Authorization (ASPA) is a technique for verifying AS_PATHs in BGP updates {{I-D.ietf-sidrops-aspa-verification}}{{I-D.ietf-sidrops-aspa-profile}}. Each AS can register ASPA records (also ASPA objects) in the RPKI to state all its provider ASes. An AS can obtain ASes' ASPA records through RTRv2 protocol {{I-D.ietf-sidrops-8210bis}} and conduct AS_PATH verification based the records. ASPA-based AS_PATH verification can detect and mitigate route leaks violating the valley-free principle and path manipulations such as forged-origin or forged-path-segment attacks. 
+Autonomous System Provider Authorization (ASPA) is a technique for verifying AS_PATHs in BGP updates {{I-D.ietf-sidrops-aspa-verification}}{{I-D.ietf-sidrops-aspa-profile}}. Each AS can register ASPA records (also ASPA objects) in the RPKI to authorize a set of ASes as its providers. An AS can obtain ASes' ASPA records through RTRv2 protocol {{I-D.ietf-sidrops-8210bis}} and conduct AS_PATH verification based the records. ASPA-based AS_PATH verification can detect and mitigate route leaks violating the valley-free principle and path manipulations such as forged-origin or forged-path-segment attacks. 
 
 ASPA can significantly enhance AS_PATH verification and is promising to be widely deployed. Despite of the strengths of ASPA, there are also some deficiencies. This document provides a detailed analysis on the strengths and deficiencies of ASPA. 
 
+It is expected that the document can help people who are to deploy ASPA understand what ASPA can do and cannot do. 
 
 ## Terminology
 
@@ -73,7 +88,7 @@ The usage of terms follows {{I-D.ietf-sidrops-aspa-verification}}{{I-D.ietf-sidr
 {::boilerplate bcp14-tagged}
 
 # ASPA Strengths and Disclaimers
-ASPA records can be registered by an AS to include all the provider ASes of the AS. For the two ASes with mutual transit relationship, the two ASes will put each other AS into its own ASPA record (i.e., considering the other AS as its provider). 
+ASPA records can be registered by an AS to authorize all its provider ASes. For the two ASes with mutual transit relationship, the two ASes will put each other AS into its own ASPA record (i.e., each AS considers the other AS as its provider). 
 
 ## Protecting Against Route Leak
 In full ASPA deployment (within a given region of interest), all "route leaks" (valley-free violations [RFC7908]) are detectable. Route leaks involve one of the following four valley-free violations: 
@@ -89,7 +104,7 @@ In full ASPA deployment (within a given region of interest), all "route leaks" (
 It is expected that in partial ASPA deployment, not all route leaks are detectable. 
 
 ## Protecting Against Path Manipulation
-Path manipulation is based on path forgery or path tampering (i.e., insertion or removal of unique ASN) in this document. Forged-origin hijack and fake link-based hijack are all path manipulation (path forgery). 
+Path manipulation can be path forgery or path tampering (i.e., insertion or removal of unique ASN) in this document. Forged-origin hijack and fake link-based hijack are all path manipulations. 
 
 In full ASPA deployment (within a given region of interest), ASPA protects against a majority of forged-origin hijacks. Each AS can attest its upstream ASes, so provider or lateral peer cannot be deceived. Customer could be deceived because ASPA does not provide attestations to downstream ASes or peering ASes. 
 
@@ -97,7 +112,7 @@ Even in full ASPA deployment, not all path manipulation attacks can be detected.
 
 
 # ASPA Deficiencies
-This section describes the deficiencies of ASPA-based AS_PATH verification. 
+This section describes the deficiencies of ASPA-based AS_PATH verification in detail. 
 
 ## Hard to Detect Bogus Records
 An AS can unilaterally authorize a set of its provider ASes. Under the one-direction authorization, an AS may intentionally or unintentionally register bogus records that are hard to be discovered. Consider two ASes, i.e., ASx and ASy. ASy is an AS that either has no link with ASx or has some relationship with ASy. Some examples of bogus ASPA records registered by ASx are listed as follows: 
@@ -106,11 +121,11 @@ An AS can unilaterally authorize a set of its provider ASes. Under the one-direc
 
 - ASy is ASx's customer/peer (or other non-provider roles) instead of ASx's provider, but ASx puts ASy into its provider-set in the ASPA record. Some route leaks may be undetectable due to the existence of bogus records. 
 
-- ASy is ASx's provider, but ASx DOES NOT put ASy into its provider-set in the ASPA record. This type of bogus records may lead to improper block of legitimate BGP routes. 
+- ASy is ASx's provider, but ASx DOES NOT put ASy into its provider-set in the ASPA record. This type of bogus records may lead to improper discarding of legitimate BGP routes. 
 
 Bogus records bring two risks:
 
-- An AS unintentionally registers a bogus record that affects the verification accuracy while is hard to be discovered. 
+- An AS unintentionally registers a bogus record that affects the AS_PATH verification accuracy, which is hard to be discovered. 
 
 - An AS maliciously registers bogus records that open a door to potential attacks. 
 
@@ -142,8 +157,10 @@ Bogus records bring two risks:
 {: #fig-bogus  title="Path manipulation based on bogus ASPA records"}
 
 
-## Fail to Detect AS_PATH Maliciously Shortened by a Provider
-ASPA-based AS_PATH verification cannot effectively detect the AS_PATH maliciously shortened by a provider. {{fig-path-shortened}} shows an example. AS1 originates the BGP route and propagates the route to other ASes. The AS_PATH received by AS5 is path\[4,3,2,1\]. However, AS5 maliciously shortens the path by falsely claim a fake link with AS2 before AS5 propagates the route to AS6. AS6's traffic to AS1 may be hijacked by AS5 if the path\[5,2,1\] is shorter than any other AS_PATHs. In the example, AS5 may not intend to drop data traffic from AS6. That is, AS5 (provider) wants AS6 (customer) to prefer AS5's transit path for increasing revenue. 
+## Fail to Detect AS_PATH Manipulation by a Provider
+ASPA-based AS_PATH verification cannot effectively detect the AS_PATH maliciously shortened by a provider. 
+
+{{fig-path-shortened}} shows an example. AS1 originates the BGP route and propagates the route to other ASes. The AS_PATH received by AS5 is path\[4,3,2,1\]. However, AS5 maliciously shortens the path by falsely claim a fake link with AS2 before AS5 propagates the route to AS6. AS6's traffic to AS1 may be hijacked by AS5 if the path\[5,2,1\] is shorter than any other AS_PATHs. In the example, AS5 may not intend to drop data traffic from AS6. That is, AS5 (provider) wants AS6 (customer) to prefer AS5's transit path for increasing revenue. 
 
 In this case, the attack cannot be detected even when all the ASes register the correct ASPA records and all the ASes other than AS5 enable ASPA-based AS_PATH verification. 
 
@@ -170,11 +187,35 @@ In this case, the attack cannot be detected even when all the ASes register the 
 ~~~
 {: #fig-path-shortened  title="AS_PATH maliciously shortened by a provider"}
 
+AS_PATH manipulation by a provider may also be used to do malicious route leaks. ASPA is not designed for defensing path manipulation. So, some malicious route leaks with path manipulation involved cannot be prevented. 
+
+{{fig-malicious-leak}} shows an example. AS2 is AS1's provider and arguably it may not leak its customer's prefix (P2) intentionally. But to increase revenue, AS2 may maliciously leak P2 with a modified AS_PATH (i.e., AS3 is removed) to AS4 for attracting more traffic to traverse AS2. Sometimes this attack may happen and goes undetected. 
+
+~~~
+        +-------+
+        |  AS4  |-------------
+        +-------+             \
+P1 path[2,1]|                  \
+P2 path[2,1]|                   \ P2 path[3,1]
+       (C2P)|                    \(C2P)
+        +-------+ P2 path[3,1]+-------+
+Offender|  AS2  |-------------|  AS3  |
+        +-------+    (P2P)    +-------+
+               \             /
+      P1 path[1]\           /P2 path[1]
+                 \(C2P)    /(C2P)
+                  +---------+
+                  |   AS1   |Originate route
+                  | (P1&P2) |
+                  +---------+
+~~~
+{: #fig-malicious-leak  title="Malicious route leak"}
+
 
 ## Cannot Distinguish Leak and Hijack for an Invalid AS_PATH
-Existing ASPA verification algorithm can identify invalid AS_PATHs, but it cannot distinguish leak and hijack for an invalid AS_PATH. The main reason is that ASPA records only focus on registering all provider ASes while not indicating the adjacency/topology information. When the Hop-check(x, y) function returns "Not provider+", the algorithm does not know whether the real cause of the result is i) ASy is ASx's customer/peer instead of provider or ii) link(x,y) is a fake link. Therefore, when the algorithm returns invalid, it is not able to indicate whether the path is caused by a fake link-based hijack or not. 
+Existing ASPA verification algorithm can identify Invalid AS_PATHs, but it cannot distinguish leak and hijack for an Invalid AS_PATH. The main reason is that ASPA records only focus on registering all provider ASes while not indicating the adjacency/topology information. When the Hop-check(x, y) function returns "Not provider+", the algorithm does not know whether the real cause of the result is i) ASy is ASx's customer/peer instead of provider or ii) link(x,y) is a fake link. Therefore, when the algorithm returns Invalid, it is not able to indicate whether the path is caused by a fake link-based hijack or not. 
 
-For operators, it's instructive to know the type of an invalid AS_PATH. If there exists no hijack, the invalid AS_PATH is likely to be an unintentional route leak. Otherwise, the network may be attacked by path manipulation attacks. 
+For operators, it's instructive to know the type of an Invalid AS_PATH. If there exists no hijack, the Invalid AS_PATH is likely to be an unintentional route leak. Otherwise, the network may be attacked by path manipulation attacks. 
 
 
 ## Not Directly Applicable to IBGP Ingress and EBGP Egress Verification
@@ -272,7 +313,7 @@ Offender|  AS2  |-------------|  AS4  |
 
 ASPA records do not support the registration of complex relationships except the mutual transit relationship. As a result, in the complex scenarios, AS_PATH cannot be effectively protected by ASPA-based AS_PATH verification.
 
-## Reduced Protection Capacity in Partial Deployment
+## Reduced Protection Capability in Partial Deployment
 To verfify an AS_PATH, ASPA verification algorithms need to check each hop of the AS_PATH. When ASPA records of the ASes along the path are partially registered, not all hops in the path can be checked. In such partial deployment scenarios, ASPA may have a reduced protection capacity. Compared to ROA, ASPA provides less benefits in the early deployment. 
 
 {{fig-partial-deploy}} shows two examples of partial deployment. In {{fig-partial-deploy}} (a), AS3 cannot detect the route leak of P1 induced by AS2 if AS1 has no ASPA record registered. This is because the Hop-check(AS1, AS2) function returns "No Attestation" and the final verification result is Unknown. In {{fig-partial-deploy}} (b), AS3 is deceived by AS2 who falsely claims AS1 is AS2's neighbor. The attack in the example is undetectable because AS1 registers no ASPA record and AS3 cannot judge the validity of the link between AS1 and AS2. 
@@ -305,31 +346,6 @@ Originate route
       (b) Forged-origin attack in partial deployment
 ~~~
 {: #fig-partial-deploy  title="Partial deployment"}
-
-## Not all Malicious Route Leaks are Prevented
-ASPA is not designed for defensing path manipulation. So, some malicious route leaks with path manipulation involved cannot be prevented. 
-
-{{fig-malicious-leak}} shows an example. AS2 is AS1's provider and arguably it may not leak its customer's prefix (P2) intentionally. But to increase revenue, AS2 may maliciously leak P2 with a modified AS_PATH (i.e., AS3 is removed) to AS4 for attracting more traffic to traverse AS2. Sometimes this attack may happen and goes undetected. 
-
-~~~
-        +-------+
-        |  AS4  |-------------
-        +-------+             \
-P1 path[2,1]|                  \
-P2 path[2,1]|                   \ P2 path[3,1]
-       (C2P)|                    \(C2P)
-        +-------+ P2 path[3,1]+-------+
-Offender|  AS2  |-------------|  AS3  |
-        +-------+    (P2P)    +-------+
-               \             /
-      P1 path[1]\           /P2 path[1]
-                 \(C2P)    /(C2P)
-                  +---------+
-                  |   AS1   |Originate route
-                  | (P1&P2) |
-                  +---------+
-~~~
-{: #fig-malicious-leak  title="Malicious route leak"}
 
 
 <!-- ........................................................................ -->
