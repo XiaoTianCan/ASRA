@@ -62,7 +62,7 @@ informative:
 --- abstract
 Autonomous System Provider Authorization (ASPA) is very helpful in detecting and mitigating route leaks (valley-free violations) and a majority of forged-origin hijacks. This document does an analysis on ASPA-based AS_PATH verification to help people understand its strengths and deficiencies. 
 
-The document can help people deploy ASPA properly and provide some directions of enhancing ASPA. 
+The document can help people deploy ASPA properly and provide some potential directions of enhancing ASPA. 
 
 
 --- middle
@@ -72,7 +72,7 @@ Autonomous System Provider Authorization (ASPA) is a technique for verifying AS_
 
 ASPA can significantly enhance AS_PATH verification and is promising to be widely deployed. Despite of the strengths of ASPA, there are also some deficiencies. This document provides a detailed analysis on the strengths and deficiencies of ASPA. 
 
-The document can help people deploy ASPA properly and provide some directions of enhancing ASPA. 
+The document can help people deploy ASPA properly and provide some potential directions of enhancing ASPA. 
 
 ## Terminology
 
