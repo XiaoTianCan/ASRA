@@ -87,41 +87,62 @@ path[2,1] |                          \   path[8,5,4,/|
 <!-- ........................................................................ -->
 
 # Autonomous System Relationship Authorization Record
-This section proposes Autonomous System Relationship Authorization (ASRA) record. The record includes not only providers (i.e., what an ASPA record cares) but also other neighboring ASes with different relationships. The followings are the contents that an ASx can put in an ASRA record: 
+This section proposes Autonomous System Relationship Authorization (ASRA) record. The record includes not only providers (i.e., what an ASPA record cares) but also other neighboring ASes with different relationships. The followings are the item that an ASx can put in an ASRA record: 
 
-- Mandatory contents
+- Basic item (same as ASPA record)
 
   - Provider-set (mandatory). Provider-set is the same as ASPA record and includes all the provider ASes of ASx. 
 
-- Optional contents (highly recommended)
+- Extended item
 
-  - Neighbor-set (optional). Neighbor-set (or adjacency-set) includes all the neighboring ASes of ASx. This set provides the topology information of ASx without exposing the detailed relationships with the neighboring ASes. 
+  - Option 1: Neighbor-set. Neighbor-set (or adjacency-set) includes all the neighboring ASes of ASx. This set provides the topology information of ASx without exposing the detailed relationships with the neighboring ASes. 
 
-- Optional contents (recommended)
+  - Option 2: Customer-set and Peer-set. Customer-set and Peer-set include all the customer ASes of ASx and all the lateral peer ASes of ASx, respectively. 
 
-  - Customer-set (optional). Customer-set includes all the customer ASes of ASx. 
+An ASRA record MUST include the basic item and at least one of the optional items (either option 1 or option 2). 
 
-  - Peer-set (optional). Peer-set includes all the lateral peer ASes of ASx. 
+To support the registration of the above item types, existing ASPA objects MAY need to be extended or new RPKI objects SHOULD be defined, which is TBD. Existing protocols {{I-D.ietf-sidrops-8210bis}} for synchronizing RPKI data from Relying Party (RP) to routers MAY also need to be extended for supporting the synchronization of ASRA data. 
 
-To support the registration of the above content types, existing ASPA objects MAY need to be extended or new RPKI objects SHOULD be defined, which is TBD. Existing protocols {{I-D.ietf-sidrops-8210bis}} for synchronizing RPKI data from Relying Party (RP) to routers MAY also need to be extended for supporting the synchronization of ASRA data. 
+The above item types can be registered together but there MUST be no conflicts between the items. For example, an AS appearing in both the provider-set and peer-set means a conflict. The registration software of ASRA MUST have a check on the items. If conflicts exist, the registration will fail. 
 
-The above content types can be registered together but there MUST be no conflicts between the contents. For example, an AS appearing in both the provider-set and peer-set means a conflict. The registration software of ASRA MUST have a check on the contents. If conflicts exist, the registration will fail. 
-
-Any type of the content MUST include the complete set of the corresponding ASes. For example, customer-set MUST include every customer AS. 
+Any type of the item MUST include the complete set of the corresponding ASes. For example, customer-set MUST include every customer AS. 
 
 
 <!-- ........................................................................ -->
 
 # ASRA-based AS_PATH Verification
-The upstream and downstream validation procedures of ASRA follow ASPA {{I-D.ietf-sidrops-aspa-verification}}. The main difference from ASPA's validation procedures is Hop-check() function. The Hop-check(ASx,ASy) in the ASRA-based AS_PATH verification is: 
 
-- If ASx has no ASRA record (i.e., no record or only ASPA record), Hop-check(ASx, ASy) is run as that of ASPA's validation procedures. 
+## Fake_link_detection() Function
 
-- If ASx has ASRA record that includes some types of the optional contents, Hop-check(ASx, ASy) will do the normal checking as ASPA while considering whether there are fake links in the AS_PATH. 
+Let AS(i) and AS(j) represent adjacent unique ASes in an AS_PATH, and thus (AS(i), AS(j)) represents an AS hop. A Fake_link_detection() function, Fake_link_detection(AS(i), AS(j)), checks if the ordered pair of ASNs, (AS(i), AS(j)), is a fake link, i.e., not adjacent in real world. 
 
-The enhanced Hop-check() function does not need to be called for each hop in the AS_PATH. It is needed only when there is a doubt at the apex of the path. Besides, ASRA record will be utilized in the direction of the Update propagation to confirm there exists a relationship between the two ASes at the apex. ASRA will not be utilized in the direction opposite to the Update propagation.
+Fake_link_detection() function works as follows:
+
+- If AS(i) has no ASRA record, then Fake_link_detection() returns "No Attestaion". 
+
+- If AS(i) has registered ASRA records, then all the adjacent ASes of AS(i) have been attested. 
+
+  - If AS(j) is attested as an adjacent AS of AS(i) in ASRA records, then Fake_link_detection() returns "Real Link". 
+
+  - If AS(j) does not appear in ASRA records, then Fake_link_detection() returns "Fake Link". 
+
+
+## AS_PATH Verification
+
+The path verification procedure of ASRA is formally specified as follows:
+
+1. If the AS_PATH has an AS_SET, then the procedure halts with the outcome "Invalid".
+
+2. Collapse prepends in the AS_SEQUENCE(s) in the AS_PATH (i.e., keep only the unique AS numbers). Let the resulting ordered sequence be represented by {AS(N), AS(N-1), ..., AS(2), AS(1)}, where AS(1) is the first-added (i.e., origin) AS and AS(N) is the last-added AS and neighbor to the receiving/validating AS.
+
+3. At this step, for 2 ≤ u ≤ N and each hop(AS(u-1), AS(u)), conduct Fake_link_detection(AS(u-1), AS(u)). If Fake_link_detection() returns "Fake Link", then the procedure halts with the outcome "Invalid". Otherwise, continue. 
+
+4. Conduct normal upstream or downstream validation procedures of ASPA (Section 6 of {{I-D.ietf-sidrops-aspa-verification}} of v17). 
+
+ASRA record MUST be utilized in the direction of the Update propagation to check whether there exists a physical link between two adjacent unique ASes in an AS_PATH. ASRA will not be utilized in the direction opposite to the Update propagation, so as to avoid the misleading of bogus ASRA records. 
 
 In the example of {{fig-path-shortened}}, suppose AS2 registers ASRA record that includes all its neighbor ASes. If AS7 conducts ASRA-based AS_PATH verification, the fake link between AS2 and AS6 can be successfully detected according to AS2' ASRA record. Then, the path modification attacks can be detected and mitigated. 
+
 
 # Security Considerations {#sec-security}
 
